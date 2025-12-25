@@ -15,48 +15,33 @@ from tkinter import filedialog
 import customtkinter as ctk
 
 try:
-    from PIL import Image  # optional, better image scaling
+    from PIL import Image
 except Exception:
     Image = None
 
 try:
-    import winreg  # Windows only
+    import winreg
 except Exception:
-    winreg = None
-
-
-# =============================
-# App Info / Update (GitHub)
-# =============================
+    winreg = Non
 
 APP_NAME = "AutoResSwitcher"
-APP_VERSION = "v1.0.0"  # your chosen format: v1.0.0
+APP_VERSION = "v1.0.0"
 GITHUB_OWNER = "RealSchnobel"
 GITHUB_REPO = "AutoResSwitcher"
 GITHUB_LATEST_RELEASE_API = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
 UPDATE_ASSET_NAME = "AutoResSwitcher_Setup.exe"
-
-
-# =============================
-# Settings
-# =============================
 
 CONFIG_FILE = "config.json"
 IMAGES_DIR = "images"
 
 DEFAULT_WIDTH = 1920
 DEFAULT_HEIGHT = 1080
-DEFAULT_REFRESH_HZ = 0  # 0 => do not force refresh unless user sets it
+DEFAULT_REFRESH_HZ = 0
 
 TEST_SECONDS = 7
 STATUS_MSG_SECONDS = 2.5
 
-DISCOVERY_SCAN_LIMIT = 500  # avoid flooding the list
-
-
-# =============================
-# Windows Display API (ctypes)
-# =============================
+DISCOVERY_SCAN_LIMIT = 500
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 
@@ -137,11 +122,6 @@ def set_resolution(width: int, height: int, refresh_hz: int | None = None) -> tu
 
     return True, "OK"
 
-
-# =============================
-# Process detection (no deps)
-# =============================
-
 def list_running_process_names_lower() -> set[str]:
     """
     Uses Windows 'tasklist' (no extra packages).
@@ -167,11 +147,6 @@ def list_running_process_names_lower() -> set[str]:
     except Exception:
         return set()
 
-
-# =============================
-# Config
-# =============================
-
 @dataclass
 class GameConfig:
     name: str
@@ -181,7 +156,7 @@ class GameConfig:
     refresh_hz: int
     image_path: str
     exe_path: str | None = None
-    source: str | None = None  # "steam"/"epic"/"riot"/"ubisoft"/"battlenet"/"manual"/...
+    source: str | None = None
 
 
 def _safe_filename(name: str) -> str:
@@ -193,7 +168,6 @@ def default_config() -> dict:
     os.makedirs(IMAGES_DIR, exist_ok=True)
     return {
         "custom_scan_paths": [
-            # user can add more folders here later, e.g. "D:\\Games"
         ],
         "games": {
             "cs2.exe": {
@@ -244,11 +218,6 @@ def save_config(cfg: dict) -> None:
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(cfg, f, indent=2, ensure_ascii=False)
 
-
-# =============================
-# Version compare
-# =============================
-
 def _normalize_version(v: str) -> tuple[int, ...] | None:
     """
     Accepts 'v1.2.3' or '1.2.3'. Returns tuple (1,2,3).
@@ -272,18 +241,11 @@ def is_newer_version(remote: str, local: str) -> bool:
     rv = _normalize_version(remote)
     lv = _normalize_version(local)
     if rv is None or lv is None:
-        # fallback: simple string compare (not ideal, but safe)
         return (remote or "") != (local or "")
-    # pad to same length
     n = max(len(rv), len(lv))
     rv2 = rv + (0,) * (n - len(rv))
     lv2 = lv + (0,) * (n - len(lv))
     return rv2 > lv2
-
-
-# =============================
-# Registry helpers (Windows)
-# =============================
 
 def _read_registry_string(root, path: str, name: str) -> str | None:
     if winreg is None:
@@ -351,19 +313,12 @@ def _get_uninstall_entries() -> list[dict]:
 
     return entries
 
-
-# =============================
-# Game discovery (best effort)
-# =============================
-
 def _looks_like_exe_path(s: str) -> str | None:
     if not s:
         return None
     s = s.strip().strip('"')
-    # DisplayIcon often: "C:\Path\game.exe,0"
     if "," in s and s.lower().endswith(".exe,0"):
         s = s[: s.lower().rfind(".exe") + 4]
-    # sometimes like: C:\Path\game.exe /something
     if ".exe" in s.lower():
         idx = s.lower().rfind(".exe")
         s = s[: idx + 4]
@@ -560,7 +515,6 @@ def discover_riot_games() -> list[dict]:
     if not os.path.isdir(base):
         return found
 
-    # Scan each top-level folder (League of Legends, VALORANT, etc.)
     try:
         top = [os.path.join(base, d) for d in os.listdir(base)]
     except Exception:
@@ -681,7 +635,6 @@ def discover_all_games(custom_paths: list[str]) -> list[dict]:
     found.extend(discover_from_uninstall_entries())
     found.extend(discover_custom_paths(custom_paths))
 
-    # unique by process name
     uniq: list[dict] = []
     seen: set[str] = set()
     for g in found:
@@ -693,11 +646,6 @@ def discover_all_games(custom_paths: list[str]) -> list[dict]:
         if len(uniq) >= DISCOVERY_SCAN_LIMIT:
             break
     return uniq
-
-
-# =============================
-# App-like dropdown (custom)
-# =============================
 
 class AppDropdown(ctk.CTkFrame):
     """
@@ -811,11 +759,6 @@ class AppDropdown(ctk.CTkFrame):
             pass
         self._popup = None
 
-
-# =============================
-# Main App
-# =============================
-
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -838,34 +781,28 @@ class App(ctk.CTk):
         self._ctk_image = None
         self._tk_photo = None
 
-        # dropdown mapping (display name -> proc_key)
         self._display_to_proc: dict[str, str] = {}
         self._proc_to_display: dict[str, str] = {}
 
         self._status_msg_after_id: str | None = None
         self._log_visible = False
 
-        # Update state
         self._update_available = False
         self._update_download_url: str | None = None
         self._update_version: str | None = None
 
-        # Merge found games once at startup
         self._merge_discovered_games_into_config()
 
         self._build_ui()
         self._refresh_game_list()
 
-        # Start watcher
         self.watcher_thread = threading.Thread(target=self._watch_loop, daemon=True)
         self.watcher_thread.start()
 
-        # Update check at startup
         threading.Thread(target=self.check_updates_on_startup, daemon=True).start()
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
-    # ---------- UI ----------
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=3)
         self.grid_columnconfigure(1, weight=2)
@@ -883,7 +820,6 @@ class App(ctk.CTk):
         title = ctk.CTkLabel(left, text="Auflösung pro Spiel", font=ctk.CTkFont(size=20, weight="bold"))
         title.grid(row=0, column=0, sticky="w", padx=16, pady=(16, 6))
 
-        # Scan/Manual buttons row (small)
         scan_row = ctk.CTkFrame(left, fg_color="transparent")
         scan_row.grid(row=1, column=0, sticky="ew", padx=16, pady=(4, 0))
         scan_row.grid_columnconfigure(0, weight=1)
@@ -985,7 +921,6 @@ class App(ctk.CTk):
         self.status_msg = ctk.CTkLabel(left, text="", text_color="#93c5fd")
         self.status_msg.grid(row=4, column=0, sticky="ew", padx=16, pady=(0, 16))
 
-        # Right panel header
         header = ctk.CTkFrame(right, fg_color="transparent")
         header.grid(row=0, column=0, sticky="ew", padx=16, pady=(16, 8))
         header.grid_columnconfigure(0, weight=1)
@@ -993,7 +928,6 @@ class App(ctk.CTk):
         status_title = ctk.CTkLabel(header, text="Status", font=ctk.CTkFont(size=20, weight="bold"))
         status_title.grid(row=0, column=0, sticky="w")
 
-        # Buttons on top-right: Update + Log
         top_btns = ctk.CTkFrame(header, fg_color="transparent")
         top_btns.grid(row=0, column=1, sticky="e")
         self.update_btn = ctk.CTkButton(
@@ -1033,7 +967,6 @@ class App(ctk.CTk):
         self.log_box.configure(state="disabled")
         self.log_box.grid_remove()
 
-    # ---------- Helpers ----------
     def _parse_int(self, s: str, field: str) -> int:
         try:
             v = int(str(s).strip())
@@ -1077,7 +1010,6 @@ class App(ctk.CTk):
         self._set_status_msg("Standard-Auflösung gesetzt: 1920×1080.")
         self.log("Felder auf Standard-Auflösung gesetzt (1920x1080).")
 
-    # ---------- Discovery / Merge ----------
     def _merge_discovered_games_into_config(self) -> int:
         """
         Returns number of newly added games.
@@ -1092,7 +1024,6 @@ class App(ctk.CTk):
             if not proc_key:
                 continue
             if proc_key in games:
-                # update exe_path/source if missing (but don't override user's res)
                 if not games[proc_key].get("exe_path") and g.get("exe_path"):
                     games[proc_key]["exe_path"] = g.get("exe_path")
                 if not games[proc_key].get("source") and g.get("source"):
@@ -1111,7 +1042,6 @@ class App(ctk.CTk):
             }
             added += 1
 
-        # enforce your presets (never overwrite user's custom changes if they edited later)
         if "cs2.exe" in games:
             games["cs2.exe"].setdefault("name", "Counter-Strike 2")
             if games["cs2.exe"].get("width") in (None, DEFAULT_WIDTH) and games["cs2.exe"].get("height") in (None, DEFAULT_HEIGHT):
@@ -1176,7 +1106,6 @@ class App(ctk.CTk):
             self._set_status_msg("Spiel hinzugefügt.")
             self.log(f"Manuell hinzugefügt: {name_guess} ({proc})")
         else:
-            # update exe_path if missing
             if not games[proc_key].get("exe_path"):
                 games[proc_key]["exe_path"] = path
                 games[proc_key]["source"] = games[proc_key].get("source") or "manual"
@@ -1184,7 +1113,6 @@ class App(ctk.CTk):
             self._set_status_msg("Spiel existiert bereits.")
             self.log(f"Manuell: schon vorhanden ({proc})")
 
-    # ---------- Dropdown mapping ----------
     def _refresh_game_list(self):
         games = self.cfg.get("games", {})
         self._display_to_proc.clear()
@@ -1233,7 +1161,6 @@ class App(ctk.CTk):
 
         self._update_preview_image(str(g.get("image_path", "")).strip())
 
-    # ---------- Image ----------
     def _update_preview_image(self, path: str):
         path = (path or "").strip()
         if not path or not os.path.exists(path):
@@ -1292,7 +1219,6 @@ class App(ctk.CTk):
         self._set_status_msg("Bild geändert.")
         self.log(f"Bild geändert: {self.cfg['games'][proc_key].get('name', proc_key)}")
 
-    # ---------- Save / Test ----------
     def save_selected_game(self):
         proc_key = self._selected_process_key()
         if not proc_key:
@@ -1352,7 +1278,6 @@ class App(ctk.CTk):
 
         threading.Thread(target=worker, daemon=True).start()
 
-    # ---------- Auto switching ----------
     def _find_active_game(self, running: set[str]) -> str | None:
         games = self.cfg.get("games", {})
         for proc_key, g in games.items():
@@ -1407,7 +1332,6 @@ class App(ctk.CTk):
 
             time.sleep(1.0)
 
-    # ---------- Updates ----------
     def check_updates_on_startup(self):
         self.log("Update-Check gestartet…")
         try:
@@ -1473,7 +1397,6 @@ class App(ctk.CTk):
                 self.after(0, lambda: self._set_status_msg("Update heruntergeladen. Installer startet…"))
                 self.log(f"Update heruntergeladen: {out_path}")
 
-                # Start installer and exit app
                 subprocess.Popen([out_path], shell=False)
                 self.after(500, self.on_close)
             except Exception as e:
@@ -1482,7 +1405,6 @@ class App(ctk.CTk):
 
         threading.Thread(target=worker, daemon=True).start()
 
-    # ---------- Shutdown ----------
     def on_close(self):
         self.stop_event.set()
         try:
