@@ -24,6 +24,7 @@ try:
 except Exception:
     winreg = Non
 
+
 APP_NAME = "AutoResSwitcher"
 APP_VERSION = "v1.0.0"
 GITHUB_OWNER = "RealSchnobel"
@@ -1417,3 +1418,4 @@ class App(ctk.CTk):
 if __name__ == "__main__":
     os.makedirs(IMAGES_DIR, exist_ok=True)
     App().mainloop()
+
