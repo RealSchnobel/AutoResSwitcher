@@ -22,7 +22,7 @@ except Exception:
 try:
     import winreg
 except Exception:
-    winreg = Non
+    winreg = None
 
 
 APP_NAME = "AutoResSwitcher"
@@ -1418,4 +1418,5 @@ class App(ctk.CTk):
 if __name__ == "__main__":
     os.makedirs(IMAGES_DIR, exist_ok=True)
     App().mainloop()
+
 
